@@ -1,0 +1,6 @@
+name "universal"
+description "universal properties with applications"
+authors "Vlad Levenfeld"
+copyright "Copyright © 2016, Vlad Levenfeld"
+license "MIT"
+targetType "sourceLibrary"
