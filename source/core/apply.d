@@ -44,7 +44,7 @@ template apply(alias f, string file = __FILE__, size_t line = __LINE__)
 		}
 
 		static if(is(B == void))
-			alias C = Tuple!();
+			alias C = Unit;
 		else
 			alias C = B;
 
@@ -61,12 +61,18 @@ template apply(alias f, string file = __FILE__, size_t line = __LINE__)
 			}
 
 			static if(is(typeof(applied()) == void))
-			{ applied; return tuple; }
+			{ applied; return unit; }
 			else
 			{ return applied; }
 		}
   }
 }
+
+/*
+	In various places in this library, its more useful to think of the empty tuple, void, and "no parameters" as being the same thing. All of those things are converted to Unit on their way into the system.
+*/
+alias Unit = Tuple!();
+auto unit() { return tuple; }
 
 /*
 	Convenience function, equivalent to lifting the identity function through apply, but doesn't waste the extra time attempting various compilations.
@@ -86,7 +92,7 @@ alias Universal(_: void) = Universal!();
 	assert(apply!add(tuple(1,2)) == apply!add(1,2));
 
 	static void f() {}
-	assert(apply!f == tuple);
+	assert(apply!f == unit);
 
 	assert( !__traits(compiles, f(f)));
 	assert(__traits(compiles, apply!f(apply!f)));

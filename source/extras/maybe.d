@@ -45,6 +45,25 @@ template maybe(alias f)
 }
 
 /*
+	fmap
+*/
+template maybeMap(alias f)
+{
+	template maybeMap(A)
+	{
+		alias B = typeof(A.init.apply!f);
+
+		Maybe!B maybeMap(Maybe!A m)
+		{
+			if(m.isJust)
+				return just(f(m.just));
+			else
+				return nothing!B;
+		}
+	}
+}
+
+/*
 	like visit, but not all cases need to be accounted for. Requires named fields. If one of the supplied function matches the inhabited union, it returns wrapped in "just". If none match, it returns "nothing".
 */
 template maybeVisit(dtors...)

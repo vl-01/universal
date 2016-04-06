@@ -38,19 +38,7 @@ template adjoin(fields...)
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-	Sometimes tuples come up a lot; they can be useful for visually grouping a set of arguments (particularly in UFCS chains).
-	In practice, I find this symbol is the best balance of unambiguity and low visual noise. YMMV
-*/
-alias t_ = tuple;
-
-/*
-	In various places in this library, its more useful to think of the empty tuple, void, and "no parameters" as being the same thing. All of those things are converted to Unit on their way into the system.
-*/
-alias Unit = Tuple!();
-auto unit() { return tuple; }
-
-/*
-	Preserves field names
+	Concatenate tuples, preserving field names
 */
 auto tconcat(Tuples...)(Tuples tuples) if(Tuples.length > 1)
 {
@@ -93,7 +81,13 @@ template tlift(alias f)
 	}
 }
 
-unittest
+/*
+	Sometimes tuples come up a lot; they can be useful for visually grouping a set of arguments (particularly in UFCS chains).
+	In practice, I find this symbol is the best balance of unambiguity and low visual noise. YMMV
+*/
+alias t_ = tuple;
+
+@("EXAMPLES") unittest
 {
   /*
     the generic universal product function, adjoin

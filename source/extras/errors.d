@@ -70,6 +70,16 @@ template failure(A...)
 	Result!A failure(Exception ex) 
 	{ return Result!A().failure(Result!A.Failure().exception(ex)); }
 }
+template isSuccess(A, Throwables...)
+{
+	bool isSuccess(Result!(A, Throwables) result)
+	{ return result.isCase!q{success}; }
+}
+template isFailure(A, Throwables...)
+{
+	bool isFailure(Result!(A, Throwables) result)
+	{ return result.isCase!q{failure}; }
+}
 alias Result() = Result!Unit;
 
 /*
@@ -107,11 +117,11 @@ template tryCatch(alias f, Throwables...)
 @("EXAMPLES") unittest
 {
 	void err() { assert(0); }
-	assert(tryCatch!err.isCase!"failure");
+	assert(tryCatch!err.isFailure);
 	assert(tryCatch!err.failure.isCase!"error");
 
 	void exc() { throw new Exception(""); }
-	assert(tryCatch!exc.isCase!"failure");
+	assert(tryCatch!exc.isFailure);
 	assert(tryCatch!exc.failure.isCase!"exception");
 
 	class MyExcept : Exception { this() { super(""); } }

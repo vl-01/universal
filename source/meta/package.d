@@ -24,7 +24,7 @@ string toPascalCase(string name)
 	if(name.canFind("_"))
 		return nName.splitter('_').map!capitalize.join.text;
 	else 
-		return nName;
+		return nName.capitalize;
 }
 string toCamelCase(string name)
 {

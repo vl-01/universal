@@ -1,5 +1,124 @@
 module universal.core.coproduct;
 
+@("EXAMPLES") unittest
+{
+	import std.stdio;
+	import std.exception;
+
+	auto u1 = Union!(
+		q{a}, int,
+		q{b}, int,
+	)();
+
+	/*
+		default initializes to first constructor
+	*/
+	assert(u1.a == 0);
+
+	/*
+		accessing uninhabited ctor asserts
+	*/
+	assertThrown!Error(u1.b);
+
+	/*
+		capable of builder-like syntax
+	*/
+	auto u2 = typeof(u1)().a(100);
+	assert(u2.a == 100);
+
+	/*
+		the inhabited ctor is conveniently checkable
+	*/
+	assert(u2.isCase!q{a});
+	assert(! u2.isCase!q{b});
+	/*
+		note: the checked ctor must be a member of the union
+	*/
+	assert(!__traits(compiles, u2.isCase!q{none}));
+
+	/*
+		unions are writable in-place
+	*/
+	u1.b = 9;
+	assertThrown!Error(u1.a);
+	assert(u1.b == 9);
+
+	/*
+		so beware of accidental assignment
+	*/
+	auto u3 = u1.a(7);
+	assert(u3.a == 7);
+	assert(u1.a == 7);
+
+	/*
+		unions without named fields identify their injections by a numerical index.
+	*/
+	auto u4 = Union!(int, int, string)();
+	u4.inj!0(2);
+	assert(u4.isCase!0);
+	u4.inj!2("hello");
+	assert(u4.isCase!2);
+
+	/*
+		the generic universal coproduct function, visit
+	*/
+	assert(u1.visit!(
+		q{a}, a => 100 * a,
+		q{b}, b => 0,
+	) == 700);
+
+	/*
+		unions can be visited without naming fields, in this case functions are matched to injections by declaration order
+	*/
+	assert(u4.visit!(
+		a => 100 * a,
+		a => 50 * a,
+		a => 0,
+	) == 0);
+
+	/*
+		for expressiveness and type safety, custom unions are easy to build
+		using the Definition mixin also enables recursive data types
+			note: this example is a class for expository purposes
+			we could have just as easily done this with a struct and its pointer
+	*/
+	static class List(A) { mixin UnionInstance!(q{nil}, q{cons}, A, List); }
+
+	/*
+		functions over unions can then be declared as recursive aliases
+	*/
+	alias sum = visit!(
+		q{nil},  () => 0,
+		q{cons}, (y,ys) => y + sum(ys)
+	);
+
+	/*
+		for convenience, we define helper ctors (generally a good practice in D)
+	*/
+	List!int nil() { return new List!int().nil; }
+	List!int cons(int x, List!int xs) { return new List!int().cons(x, xs); }
+
+	assert(sum(nil) == 0);
+	assert(sum(cons(42, nil)) == 42);
+	assert(sum(cons(1, cons(5, cons(7, nil)))) == 13);
+
+	/*
+		unions can also represent classification results
+	*/
+	with(
+		2.classify!(
+			q{odd}, a => a % 2,
+			q{even}, _=> true,
+		)
+	) assert(even);
+
+	with(
+		3.classify!(
+			q{odd}, a => a % 2,
+			q{even}, _=> true,
+		)
+	) assert(odd);
+}
 
 /*
 	This module implements the coproduct of normalized D types, here called Union, also known as disjoint union, tagged union, sum type, variant, Algebraic, or ADT.
@@ -312,124 +431,4 @@ template ulift(alias f)
     auto ulift(U u, A a)
     { return u.visit!(Repeat!(U.Union.width, f))(a); }
   }
-}
-
-@("EXAMPLES") unittest
-{
-	import std.stdio;
-	import std.exception;
-
-	auto u1 = Union!(
-		q{a}, int,
-		q{b}, int,
-	)();
-
-	/*
-		default initializes to first constructor
-	*/
-	assert(u1.a == 0);
-
-	/*
-		accessing uninhabited ctor asserts
-	*/
-	assertThrown!Error(u1.b);
-
-	/*
-		capable of builder-like syntax
-	*/
-	auto u2 = typeof(u1)().a(100);
-	assert(u2.a == 100);
-
-	/*
-		the inhabited ctor is conveniently checkable
-	*/
-	assert(u2.isCase!q{a});
-	assert(! u2.isCase!q{b});
-	/*
-		note: the checked ctor must be a member of the union
-	*/
-	assert(!__traits(compiles, u2.isCase!q{none}));
-
-	/*
-		unions are writable in-place
-	*/
-	u1.b = 9;
-	assertThrown!Error(u1.a);
-	assert(u1.b == 9);
-
-	/*
-		so beware of accidental assignment
-	*/
-	auto u3 = u1.a(7);
-	assert(u3.a == 7);
-	assert(u1.a == 7);
-
-	/*
-		unions without named fields identify their injections by a numerical index.
-	*/
-	auto u4 = Union!(int, int, string)();
-	u4.inj!0(2);
-	assert(u4.isCase!0);
-	u4.inj!2("hello");
-	assert(u4.isCase!2);
-
-	/*
-		the generic universal coproduct function, visit
-	*/
-	assert(u1.visit!(
-		q{a}, a => 100 * a,
-		q{b}, b => 0,
-	) == 700);
-
-	/*
-		unions can be visited without naming fields, in this case functions are matched to injections by declaration order
-	*/
-	assert(u4.visit!(
-		a => 100 * a,
-		a => 50 * a,
-		a => 0,
-	) == 0);
-
-	/*
-		for expressiveness and type safety, custom unions are easy to build
-		using the Definition mixin also enables recursive data types
-			note: this example is a class for expository purposes
-			we could have just as easily done this with a struct and its pointer
-	*/
-	static class List(A) { mixin UnionInstance!(q{nil}, q{cons}, A, List); }
-
-	/*
-		functions over unions can then be declared as recursive aliases
-	*/
-	alias sum = visit!(
-		q{nil},  () => 0,
-		q{cons}, (y,ys) => y + sum(ys)
-	);
-
-	/*
-		for convenience, we define helper ctors (generally a good practice in D)
-	*/
-	List!int nil() { return new List!int().nil; }
-	List!int cons(int x, List!int xs) { return new List!int().cons(x, xs); }
-
-	assert(sum(nil) == 0);
-	assert(sum(cons(42, nil)) == 42);
-	assert(sum(cons(1, cons(5, cons(7, nil)))) == 13);
-
-	/*
-		unions can also represent classification results
-	*/
-	with(
-		2.classify!(
-			q{odd}, a => a % 2,
-			q{even}, _=> true,
-		)
-	) assert(even);
-
-	with(
-		3.classify!(
-			q{odd}, a => a % 2,
-			q{even}, _=> true,
-		)
-	) assert(odd);
 }
