@@ -6,7 +6,6 @@ import universal.core.product;
 import universal.core.apply;
 import std.traits;
 import std.typetuple;
-import std.typecons: staticIota;
 
 /*
 	a type which may or may not be inhabited
@@ -74,8 +73,10 @@ template maybeVisit(dtors...)
     alias dtorNames = Filter!(isString, dtors);
     alias dtorFuncs = Filter!(isParameterized, dtors);
 
-    enum ctorIdx(string name) = staticIndexOf!(name, U.Union.ctorNames);
-    enum dtorIdx(string name) = staticIndexOf!(name, dtorNames);
+    import std.algorithm.searching : countUntil;
+
+    enum ctorIdx(string name) = [U.Union.ctorNames].countUntil!(n => n == name);
+    enum dtorIdx(string name) = [dtorNames].countUntil!(n => n == name);
 
     alias DtorCod(string name)
     = typeof(dtorFuncs[dtorIdx!name](U.Union.Args!(ctorIdx!name).init));

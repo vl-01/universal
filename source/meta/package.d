@@ -21,10 +21,18 @@ string toPascalCase(string name)
 	else
 		nName = name;
 
+    string capitalizeFirst(string str) 
+    {
+        if(str.length > 0) 
+            return str[0].toUpper.text ~ str[1..$];
+        else 
+            return str;
+    }
+
 	if(name.canFind("_"))
-		return nName.splitter('_').map!capitalize.join.text;
+		return nName.splitter('_').map!capitalizeFirst.join.text;
 	else 
-		return nName.capitalize;
+		return capitalizeFirst(nName);
 }
 string toCamelCase(string name)
 {
@@ -58,7 +66,7 @@ template Interleave(Symbols...) if(Symbols.length % 2 == 0)
 
 	alias Pair(uint i) = TypeTuple!(A[i], B[i]);
 
-	alias Interleave = staticMap!(Pair, staticIota!(0, A.length));
+	alias Interleave = staticMap!(Pair, aliasSeqOf!(A.length.iota));
 }
 
 template DeclSpecs(specs...)
@@ -77,6 +85,3 @@ alias DeclSpecs() = TypeTuple!();
 
 auto WIP(string f = __FUNCTION__)() 
 { return format(q{ assert(0, "unimplemented \"%s\""); }, simpleName!f); }
-
-alias Repeat(uint n, A...) = TypeTuple!(Repeat!(n-1, A), A);
-alias Repeat(uint n : 0, _...) = TypeTuple!();

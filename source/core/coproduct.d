@@ -182,6 +182,16 @@ mixin template UnionInstance(ctors...)
 
 	static struct Union
 	{
+		import std.meta;
+		import universal.meta;
+		import std.typetuple;
+		import std.typecons;
+		import std.range;
+		import universal.core.product;
+		import universal.core.apply;
+		import std.conv : text;
+		import std.format : format;
+
 		static:
 
 		alias ctorNames = Filter!(isString, ctors);
@@ -261,10 +271,12 @@ mixin template UnionInstance(ctors...)
 
 		struct CodeGen
 		{
+            import std.range: iota;
+
 			enum declUnion = declare!unionDecl;
 			enum declInjections = declare!injectionDecl;
 
-			enum declare(alias decl) = [staticMap!(decl, staticIota!(0, Union.width))].join("\n");
+			enum declare(alias decl) = [staticMap!(decl, aliasSeqOf!(Union.width.iota))].join("\n");
 
 			static unionDecl(uint i)()
 			{
@@ -296,16 +308,6 @@ mixin template UnionInstance(ctors...)
 				].join("\n");
 			}
 		}
-
-		private:
-		import std.typetuple;
-		import std.typecons;
-		import std.range;
-		import universal.meta;
-		import universal.core.product;
-		import universal.core.apply;
-		import std.conv : text;
-		import std.format : format;
 	}
 }
 
@@ -329,6 +331,8 @@ template visit(dtors...)
   import std.typetuple;
   import std.typecons;
   import universal.meta;
+  import universal.core.apply;
+  import std.range;
 
   alias dtorNames = Filter!(isString, dtors);
   alias dtorFuncs = Filter!(isParameterized, dtors);
@@ -338,7 +342,7 @@ template visit(dtors...)
 		auto visit(U u, A args)
 		{
 			with(U.Union)
-			foreach(i; staticIota!(0, width))
+			foreach(i; aliasSeqOf!(width.iota))
 				if(i == u.tag)
 				{
 					static if(dtorNames.length > 0)
@@ -407,12 +411,15 @@ template isCase(uint ctor)
 }
 template isCase(string ctor)
 {
-	import std.typetuple;
+	import std.meta;
+	import std.range;
+	import std.algorithm.searching;
+	import std.typecons;
 
 	template isCase(U) if(is(U.Union) && is(typeof((){ static assert(U.Union.ctorNames.length > 0); })))
 	{
-		enum i = staticIndexOf!(ctor, U.Union.ctorNames);
-		static assert(i > -1, ctor~" is not a case of "~U.stringof);
+		enum i = [U.Union.ctorNames].countUntil!(name => name == ctor);
+		static assert(i > -1, ctor~" is not a case of "~[U.Union.ctorNames].stringof);
 
 		bool isCase(U u) { return u.tag == i; }
 	}
@@ -425,6 +432,7 @@ template isCase(string ctor)
 template ulift(alias f)
 {
   import universal.meta;
+  import std.meta;
 
   template ulift(U, A...) if(is(U.Union))
   {

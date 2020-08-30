@@ -7,12 +7,12 @@ import universal.core.apply;
 import universal.meta;
 
 /*
-	This module extends std.typecons.Tuple functionality in various ways.
+  This module extends std.typecons.Tuple functionality in various ways.
 */
 
 
 /*
-	std.functional.adjoin is reimplemented to support named fields
+  std.functional.adjoin is reimplemented to support named fields
 */
 template adjoin(fields...)
 {
@@ -20,70 +20,74 @@ template adjoin(fields...)
   alias funcs = Filter!(isParameterized, fields);
 
   template adjoin(A...)
-	{
-		alias Proj(uint i) = Universal!(typeof(funcs[i](A.init)));
-		alias Projs = staticMap!(Proj, staticIota!(0, funcs.length));
-    alias T = Tuple!(DeclSpecs!(Projs, fieldNames));
-			
-		T adjoin(A args) 
-		{
-			auto proj(uint i)() { return apply!(funcs[i])(args); }
-			alias projs = staticMap!(proj, staticIota!(0, funcs.length));
+  {
+    import std.range : iota;
 
-			return T(projs);
-		}
-	}
+    alias Proj(uint i) = Universal!(typeof(funcs[i](A.init)));
+    alias Projs = staticMap!(Proj, aliasSeqOf!(funcs.length.iota));
+    alias T = Tuple!(DeclSpecs!(Projs, fieldNames));
+      
+    T adjoin(A args) 
+    {
+      auto proj(uint i)() { return apply!(funcs[i])(args); }
+      alias projs = staticMap!(proj, aliasSeqOf!(funcs.length.iota));
+
+      return T(projs);
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-	Concatenate tuples, preserving field names
+  Concatenate tuples, preserving field names
 */
 auto tconcat(Tuples...)(Tuples tuples) if(Tuples.length > 1)
 {
-	return tconcat(
-		tuple!(
-			Tuples[0].fieldNames,
-			Tuples[1].fieldNames
-		)(tuples[0][], tuples[1][]),
-		tuples[2..$]
-	);
+  return tconcat(
+    tuple!(
+      Tuples[0].fieldNames,
+      Tuples[1].fieldNames
+    )(tuples[0][], tuples[1][]),
+    tuples[2..$]
+  );
 }
 auto tconcat(Types...)(Tuple!Types baseCase)
 {
-	return baseCase;
+  return baseCase;
 }
 
 /*
-	Apply a function (or a template function) to every element of the tuple to produce a new tuple.
+  Apply a function (or a template function) to every element of the tuple to produce a new tuple.
 */
 template tlift(alias f)
 {
-	template tlift(A) if(isTuple!A)
-	{
-		alias B(uint i) = typeof(f(A[i].init));
+  template tlift(A) if(isTuple!A)
+  {
+    alias B(uint i) = typeof(f(A[i].init));
 
-		static if(text(A.fieldNames) == "")
-			alias names = TypeTuple!();
-		else
-			alias names = A.fieldNames;
+    static if(text(A.fieldNames) == "")
+      alias names = TypeTuple!();
+    else
+      alias names = A.fieldNames;
 
-		auto tlift(A a)
-		{
-			B!i apply(uint i)(A a) { return f(a[i]); }
+    auto tlift(A a)
+    {
+            import std.range : iota;
 
-			return a.adjoin!(
-				staticMap!(apply, staticIota!(0, A.Types.length)),
-				names
-			);
-		}
-	}
+      B!i apply(uint i)(A a) { return f(a[i]); }
+
+      return a.adjoin!(
+        staticMap!(apply, aliasSeqOf!(A.Types.length.iota)),
+        names
+      );
+    }
+  }
 }
 
 /*
-	Sometimes tuples come up a lot; they can be useful for visually grouping a set of arguments (particularly in UFCS chains).
-	In practice, I find this symbol is the best balance of unambiguity and low visual noise. YMMV
+  Sometimes tuples come up a lot; they can be useful for visually grouping a set of arguments (particularly in UFCS chains).
+  In practice, I find this symbol is the best balance of unambiguity and low visual noise. YMMV
 */
 alias t_ = tuple;
 
@@ -126,8 +130,8 @@ alias t_ = tuple;
     Tuples form a monoid over field types where mappend = tconcat and mempty = t_
   */
   auto t3 = t2.tconcat(
-		t_!(q{c},q{d})
-				 (9,   2)
+    t_!(q{c},q{d})
+         (9,   2)
   );
     assert(t3[0..2] == t2[]);
     assert(t3[2..$] == t_(9,2)[]);

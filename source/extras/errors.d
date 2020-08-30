@@ -96,6 +96,8 @@ template tryCatch(alias f, Throwables...)
 
 		string cases()
 		{
+            import std.range : iota;
+
 			template catchCase(uint i)
 			{
 				enum catchCase = format(q{
@@ -106,7 +108,7 @@ template tryCatch(alias f, Throwables...)
 
 			return [
 				q{ try return R.init.success(apply!f(args)); },
-				staticMap!(catchCase, staticIota!(0, R.Failure.Union.width))
+				staticMap!(catchCase, aliasSeqOf!(R.Failure.Union.width.iota))
 			].join("\n");
 		}
 

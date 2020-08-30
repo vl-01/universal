@@ -1,6 +1,5 @@
 module universal.extras.enums;
 
-import std.typecons: staticIota;
 import std.typetuple;
 import std.traits;
 import universal.core.product;
@@ -33,7 +32,10 @@ template enumUnion(N) if(is(N == enum))
 */
 template enumDecls(N)
 {
-  alias enumDecls = staticMap!(enumDecl, staticIota!(0, Ns.length));
+  import std.range: iota;
+  import std.meta: aliasSeqOf;
+
+  alias enumDecls = staticMap!(enumDecl, aliasSeqOf!(Ns.length.iota));
 
   alias Ns = EnumMembers!N; 
   alias enumDecl(uint i) = TypeTuple!(__traits(identifier, Ns[i]), N);
